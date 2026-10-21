@@ -1,0 +1,44 @@
+name: Deploy portfolio and original ERP demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Restore original ERP demo from uploaded ZIP
+        run: |
+          if [ -f erp-static-demo.zip ]; then
+            rm -rf erp-demo
+            mkdir -p erp-demo
+            unzip -oq erp-static-demo.zip -d erp-demo
+            test -f erp-demo/index.html
+          else
+            echo "erp-static-demo.zip is not yet in the repository; keeping the current ERP preview."
+          fi
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
